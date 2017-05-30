@@ -6,13 +6,16 @@
 if the Sysmon service exists and validate the file hash against the version 
 from the specified directory before choosing to install or update the Sysmon 
 configuration. If the hashes do not match, it will uninstall the current 
-version and install the version from the $RunDir. This is designed to be run 
-as a computer startup script or a daily system task without any user 
-interaction.
+version and install the version from the $RunDir.
 
     Author: Thomas Connell
 
 .DESCRIPTION
+    This function was created to aide in the deployment/maintenance of 
+the Sysmon service to a large number of computers. It is designed to 
+be run as a computer startup script or a daily system task without any 
+user interaction.
+
     System Monitor (Sysmon) is a Windows system service and device driver 
 that, once installed on a system, remains resident across system reboots to 
 monitor and log system activity to the Windows event log. It provides 
@@ -34,6 +37,7 @@ changes to file creation time.
 .EXAMPLE
     PS C:\> Update-Sysmon -RunDir "C:\Installs\Sysmon" -ConfigFile "sysmonconfig-export.xml" -Verbose
     - Installs Sysmon using files in the specified directory and uses a specific config file name
+    - Only the configuration is updated if Sysmon is already installed
 #>
 	param
 	(
