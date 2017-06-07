@@ -35,9 +35,12 @@ changes to file creation time.
     PS C:\> Update-Sysmon -Uninstall -Verbose
     - Uninstalls Sysmon
 .EXAMPLE
-    PS C:\> Update-Sysmon -RunDir "C:\Installs\Sysmon" -ConfigFile "sysmonconfig-export.xml" -Verbose
+    PS C:\> Update-Sysmon -RunDir "C:\Installs\Sysmon" -ConfigFile "workstation-sysmonconfig.xml" -Verbose
     - Installs Sysmon using files in the specified directory and uses a specific config file name
     - Only the configuration is updated if Sysmon is already installed
+.EXAMPLE
+    PS C:\> PowerShell.exe -Command {. "\\Path\To\Sysmon\Update-Sysmon.ps1";Update-Sysmon}
+    - Method to load and execute function from a file share without any user interaction
 #>
 	param
 	(
@@ -53,7 +56,7 @@ changes to file creation time.
 
     function Uninstall-Sysmon
     {
-        if (Test-Path "C:\Windows\Sysmon.exe")
+        if ((Test-Path "C:\Windows\Sysmon.exe") -and (Test-Path "C:\Windows\SysmonDrv.sys"))
         {
             Write-Verbose "Uninstalling Sysmon from $ENV:COMPUTERNAME..."
             & "C:\Windows\Sysmon.exe" -u
@@ -80,7 +83,7 @@ changes to file creation time.
 
     function Validate-Sysmon
     {
-        if (Test-Path "C:\Windows\Sysmon.exe")
+        if ((Test-Path "C:\Windows\Sysmon.exe") -and (Test-Path "C:\Windows\SysmonDrv.sys"))
         {
             if ([Environment]::Is64BitOperatingSystem)
             {   # 64-bit validation
@@ -105,14 +108,14 @@ changes to file creation time.
 
     function Apply-SysmonConfig
     {
-        Write-Verbose "Applying Sysmon configuration: $RunDir\$ConfigFile"
-        if ([Environment]::Is64BitOperatingSystem)
+        if ((Test-Path "C:\Windows\Sysmon.exe") -and (Test-Path "C:\Windows\SysmonDrv.sys"))
         {
-            & "$RunDir\Sysmon64.exe" -accepteula -c "$RunDir\$ConfigFile"
+            Write-Verbose "Applying Sysmon configuration: $RunDir\$ConfigFile"
+            & "C:\Windows\Sysmon.exe" -accepteula -c "$RunDir\$ConfigFile"
         }
         else
         {
-            & "$RunDir\Sysmon.exe" -accepteula -c "$RunDir\$ConfigFile"
+            Write-Verbose "Sysmon does not appear to be installed!"
         }
     }
 
@@ -145,6 +148,6 @@ changes to file creation time.
     }
     else
     {
-        Write-Error "Required files are missing from $RunDir"
+        Write-Error "Required Sysmon installation files are missing from $RunDir"
     }
 }
