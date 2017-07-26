@@ -112,6 +112,12 @@ changes to file creation time.
         {
             Write-Verbose "Applying Sysmon configuration: $RunDir\$ConfigFile"
             & "C:\Windows\Sysmon.exe" -accepteula -c "$RunDir\$ConfigFile"
+
+            if ((Get-Service -Name "Sysmon" -ErrorAction SilentlyContinue).Status -eq "Stopped")
+            { #Sysmon service was stopped and needs to be started
+                Write-Verbose "Starting Sysmon service..."
+                Start-Service -Name "Sysmon"
+            }
         }
         else
         {
@@ -127,7 +133,7 @@ changes to file creation time.
 
     if ((Test-Path "$RunDir\Sysmon64.exe") -and (Test-Path "$RunDir\Sysmon.exe") -and (Test-Path "$RunDir\$ConfigFile"))
     { #All required files are present
-        if ((Get-Service Sysmon -ErrorAction SilentlyContinue).Name -eq "Sysmon")
+        if ((Get-Service -Name "Sysmon" -ErrorAction SilentlyContinue).Name -eq "Sysmon")
         {   #Sysmon service exists, validate hash
             if (Validate-Sysmon)
             {   #Re-apply configuration
