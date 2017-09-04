@@ -44,12 +44,12 @@ changes to file creation time.
 #>
 	param
 	(
-		[Parameter(Position = 0)]
+        [Parameter(Position = 0)]
         [string]
-		$RunDir = $PSScriptRoot,
-		[Parameter(Position = 1)]
+        $RunDir = $PSScriptRoot,
+        [Parameter(Position = 1)]
         [string]
-        $ConfigFile = "",
+        $ConfigFile = "auto-select",
         [switch]
         $Uninstall
 	)
@@ -131,9 +131,9 @@ changes to file creation time.
         break
     }
 
-    if ($ConfigFile = "")
+    if ($ConfigFile -eq "auto-select")
     {
-        <#
+        <# Select configuration file based on OS type
         0 = Standalone Workstation
         1 = Member Workstation
         2 = Standalone Server
@@ -145,8 +145,10 @@ changes to file creation time.
         if ($Role -eq 1) {$ConfigFile = "Config\sysmonconfig-workstation2-production.xml"}
         if ($Role -eq 3) {$ConfigFile = "Config\sysmonconfig-memberserver2-production.xml"}
         if ($Role -ge 4) {$ConfigFile = "Config\sysmonconfig-domaincontroller2-production.xml"}
-        Write-Verbose "Configuration selected based on computer role: $RunDir\$ConfigFile"
     }
+
+    Write-Verbose "Script RunDir: $RunDir"
+    Write-Verbose "Configuration file: $ConfigFile"
 
     if ((Test-Path "$RunDir\Sysmon64.exe") -and (Test-Path "$RunDir\Sysmon.exe") -and (Test-Path "$RunDir\$ConfigFile"))
     { #All required files are present
