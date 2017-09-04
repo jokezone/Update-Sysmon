@@ -35,7 +35,7 @@ changes to file creation time.
     PS C:\> Update-Sysmon -Uninstall -Verbose
     - Uninstalls Sysmon
 .EXAMPLE
-    PS C:\> Update-Sysmon -RunDir "C:\Installs\Sysmon" -ConfigFile "workstation-sysmonconfig.xml" -Verbose
+    PS C:\> Update-Sysmon -RunDir "C:\Installs\Sysmon" -ConfigFile "Config\workstation-sysmonconfig.xml" -Verbose
     - Installs Sysmon using files in the specified directory and uses a specific config file name
     - Only the configuration is updated if Sysmon is already installed
 .EXAMPLE
@@ -49,7 +49,7 @@ changes to file creation time.
 		$RunDir = $PSScriptRoot,
 		[Parameter(Position = 1)]
         [string]
-        $ConfigFile = "sysmonconfig-export.xml",
+        $ConfigFile = "",
         [switch]
         $Uninstall
 	)
@@ -131,6 +131,23 @@ changes to file creation time.
         break
     }
 
+    if ($ConfigFile = "")
+    {
+        <#
+        0 = Standalone Workstation
+        1 = Member Workstation
+        2 = Standalone Server
+        3 = Member Server
+        4 = Backup Domain Controller
+        5 = Primary Domain Controller
+        #>
+        $Role = (Get-WmiObject Win32_ComputerSystem).DomainRole
+        if ($Role -eq 1) {$ConfigFile = "Config\sysmonconfig-workstation2-production.xml"}
+        if ($Role -eq 3) {$ConfigFile = "Config\sysmonconfig-memberserver2-production.xml"}
+        if ($Role -ge 4) {$ConfigFile = "Config\sysmonconfig-domaincontroller2-production.xml"}
+        Write-Verbose "Configuration selected based on computer role: $RunDir\$ConfigFile"
+    }
+
     if ((Test-Path "$RunDir\Sysmon64.exe") -and (Test-Path "$RunDir\Sysmon.exe") -and (Test-Path "$RunDir\$ConfigFile"))
     { #All required files are present
         if ((Get-Service -Name "Sysmon" -ErrorAction SilentlyContinue).Name -eq "Sysmon")
@@ -141,7 +158,7 @@ changes to file creation time.
             }
             else
             {
-                Write-Verbose "Local Sysmon hash does *not* match source file hash..."
+                Write-Verbose "Local Sysmon hash does *not* match source file hash. Re-installing Sysmon..."
                 Uninstall-Sysmon
                 Start-Sleep -Seconds 5
                 Install-Sysmon
