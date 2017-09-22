@@ -56,34 +56,45 @@ changes to file creation time.
 
     function Uninstall-Sysmon
     {
-        if ((Test-Path "C:\Windows\Sysmon.exe") -and (Test-Path "C:\Windows\SysmonDrv.sys"))
+        if ((Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon") -and (Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\SysmonDrv"))
+        #if ((Test-Path "C:\Windows\Sysmon.exe") -and (Test-Path "C:\Windows\SysmonDrv.sys"))
         {
-            Write-Verbose "Uninstalling Sysmon from $ENV:COMPUTERNAME..."
-            & "C:\Windows\Sysmon.exe" -u
+            Write-Verbose "$(Get-Date): Uninstalling Sysmon from $ENV:COMPUTERNAME..."
+            #& "C:\Windows\Sysmon.exe" -u #Causes memory_corruption BUGCHECK_STR 0x1a_2102 on some systems
+            Write-Verbose "$(Get-Date): Removing Sysmon service registry keys - Sysmon will continue to run until the next reboot"
+            Remove-Item -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon" -Recurse -Force
+            Remove-Item -Path "HKLM:\SYSTEM\CurrentControlSet\Services\SysmonDrv" -Recurse -Force
         }
         else
         {
-            Write-Verbose "Sysmon does not appear to be installed!"
+            Write-Verbose "$(Get-Date): Unable to uninstall - Sysmon does not appear to be installed!"
         }
     }
 
     function Install-Sysmon
     {
-        if ([Environment]::Is64BitOperatingSystem)
-        {
-            Write-Verbose "Installing 64-bit Sysmon..."
-            & "$RunDir\Sysmon64.exe" -accepteula -i "$RunDir\$ConfigFile"
+        if (-not((Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon") -and (Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\SysmonDrv") -and (Get-Process -Name "Sysmon")))
+        { #Verify service registry keys and process are not present before attempting an install
+            if ([Environment]::Is64BitOperatingSystem)
+            {
+                Write-Verbose "$(Get-Date): Installing 64-bit Sysmon..."
+                & "$RunDir\Sysmon64.exe" -accepteula -i "$RunDir\$ConfigFile"
+            }
+            else
+            {
+                Write-Verbose "$(Get-Date): Installing 32-bit Sysmon..."
+                & "$RunDir\Sysmon.exe" -accepteula -i "$RunDir\$ConfigFile"
+            }
         }
         else
         {
-            Write-Verbose "Installing 32-bit Sysmon..."
-            & "$RunDir\Sysmon.exe" -accepteula -i "$RunDir\$ConfigFile"
+            Write-Verbose "$(Get-Date): Unable to install because Sysmon services or process are present. Please reboot and try again."
         }
     }
 
     function Validate-Sysmon
     {
-        if ((Test-Path "C:\Windows\Sysmon.exe") -and (Test-Path "C:\Windows\SysmonDrv.sys"))
+        if ((Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon") -and (Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\SysmonDrv"))
         {
             if ([Environment]::Is64BitOperatingSystem)
             {   # 64-bit validation
@@ -102,26 +113,26 @@ changes to file creation time.
         }
         else
         {
-            Write-Verbose "Sysmon does not appear to be installed!"
+            Write-Verbose "$(Get-Date): Validation failed - Sysmon does not appear to be installed!"
         }
     }
 
     function Apply-SysmonConfig
     {
-        if ((Test-Path "C:\Windows\Sysmon.exe") -and (Test-Path "C:\Windows\SysmonDrv.sys"))
+        if ((Test-Path "C:\Windows\Sysmon.exe") -and (Test-Path "C:\Windows\SysmonDrv.sys") -and (Get-Process -Name "Sysmon"))
         {
-            Write-Verbose "Applying Sysmon configuration: $RunDir\$ConfigFile"
+            Write-Verbose "$(Get-Date): Applying Sysmon configuration: $RunDir\$ConfigFile"
             & "C:\Windows\Sysmon.exe" -accepteula -c "$RunDir\$ConfigFile"
 
             if ((Get-Service -Name "Sysmon" -ErrorAction SilentlyContinue).Status -eq "Stopped")
             { #Sysmon service was stopped and needs to be started
-                Write-Verbose "Starting Sysmon service..."
+                Write-Verbose "$(Get-Date): Starting Sysmon service..."
                 Start-Service -Name "Sysmon"
             }
         }
         else
         {
-            Write-Verbose "Sysmon does not appear to be installed!"
+            Write-Verbose "$(Get-Date): Unable to apply configuration - Sysmon does not appear to be installed or running!"
         }
     }
 
@@ -147,8 +158,8 @@ changes to file creation time.
         if ($Role -ge 4) {$ConfigFile = "Config\sysmonconfig-domaincontroller2-production.xml"}
     }
 
-    Write-Verbose "Script RunDir: $RunDir"
-    Write-Verbose "Configuration file: $ConfigFile"
+    Write-Verbose "$(Get-Date): Script RunDir: $RunDir"
+    Write-Verbose "$(Get-Date): Configuration file: $ConfigFile"
 
     if ((Test-Path "$RunDir\Sysmon64.exe") -and (Test-Path "$RunDir\Sysmon.exe") -and (Test-Path "$RunDir\$ConfigFile"))
     { #All required files are present
@@ -160,10 +171,8 @@ changes to file creation time.
             }
             else
             {
-                Write-Verbose "Local Sysmon hash does *not* match source file hash. Re-installing Sysmon..."
+                Write-Verbose "$(Get-Date): Local Sysmon hash does *not* match source file hash. Sysmon will be re-installed."
                 Uninstall-Sysmon
-                Start-Sleep -Seconds 5
-                Install-Sysmon
             }
         }
         else
