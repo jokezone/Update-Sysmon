@@ -54,6 +54,9 @@ changes to file creation time.
         $Uninstall
 	)
 
+    $LogFile = $env:TEMP + "\Update-Sysmon-Log.txt"
+    Get-ChildItem $LogFile | Where Length -gt 6000 | Remove-Item -Confirm:$false
+    Start-Transcript $LogFile -Append
     function Uninstall-Sysmon
     {
         if ((Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon") -and (Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\SysmonDrv"))
@@ -67,7 +70,7 @@ changes to file creation time.
         }
         else
         {
-            Write-Verbose "$(Get-Date): Unable to uninstall - Sysmon does not appear to be installed!"
+            Write-Verbose "$(Get-Date): Unable to uninstall because Sysmon services are not registered. Please reboot and try again."
         }
     }
 
@@ -113,7 +116,7 @@ changes to file creation time.
         }
         else
         {
-            Write-Verbose "$(Get-Date): Validation failed - Sysmon does not appear to be installed!"
+            Write-Verbose "$(Get-Date): Validation failed because Sysmon services are not registered."
         }
     }
 
@@ -184,4 +187,5 @@ changes to file creation time.
     {
         Write-Error "Required Sysmon installation files are missing from $RunDir"
     }
+    Stop-Transcript
 }
