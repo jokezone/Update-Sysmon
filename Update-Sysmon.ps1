@@ -55,8 +55,9 @@ changes to file creation time.
 	)
 
     $LogFile = $env:TEMP + "\Update-Sysmon-Log.txt"
-    Get-ChildItem $LogFile | Where Length -gt 6000 | Remove-Item -Confirm:$false
+    Get-ChildItem $LogFile | Where-Object Length -gt 1024000 | Remove-Item -Confirm:$false
     Start-Transcript $LogFile -Append
+
     function Uninstall-Sysmon
     {
         if ((Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon") -and (Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\SysmonDrv"))
