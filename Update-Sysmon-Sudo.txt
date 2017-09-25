@@ -1,0 +1,55 @@
+If all required files are present (Sysmon binaries/config file)
+{
+    If Sysmon service exists
+    {
+        (Validate-Sysmon function)
+        If (Sysmon service registry keys exist)
+        {
+            If hash of local Sysmon.exe matches hash of RunDir Sysmon.exe
+            {
+                Verify Sysmon/SysmonDrv services are started
+                (Apply-SysmonConfig function)
+                If (Sysmon service registry key exists and Sysmon.exe process is running)
+                {
+                    If (Configuration file hash *does not* match RunDir hash)
+                    {
+                        Apply configuration and update hash in local registry
+                    }
+                    Else
+                    {
+                        Do nothing
+                    }
+                    If (Configuration file hash *is missing* from local registry)
+                    {
+                        Write configuration file hash to local registry
+                    }
+                }
+                Else (Sysmon registry key or process *are not* present)
+                {
+                    Do nothing
+                }
+            }
+            Else (hash of local Sysmon.exe *doe not* match hash of RunDir Sysmon.exe)
+            {
+                (Uninstall-Sysmon function)
+                If Sysmon service registry keys exist, delete them.
+                 *Sysmon will continue to log events until the next reboot
+                 *After reboot, Sysmon will only begin logging events after next script execution
+            }
+        }
+        Else (Sysmon service registry keys *do not* exist)
+        {
+            Do nothing
+        }
+    }
+    Else (Sysmon service *does not* exists)
+    {
+        (Install-Sysmon function)
+        If Sysmon registry keys do not exist and Sysmon process is not running, install Sysmon
+        Write configuration file hash to local registry
+    }
+}
+Else (All required files *are not* present)
+{
+    Do nothing
+}
