@@ -15,7 +15,7 @@ If all required files are present (Sysmon binaries/config file)
                     {
                         Apply configuration and update hash in local registry
                     }
-                    Else
+                    Else (Configuration file hash matches RunDir hash)
                     {
                         Do nothing
                     }
@@ -29,7 +29,7 @@ If all required files are present (Sysmon binaries/config file)
                     Do nothing
                 }
             }
-            Else (hash of local Sysmon.exe *doe not* match hash of RunDir Sysmon.exe)
+            Else (hash of local Sysmon.exe *does not* match hash of RunDir Sysmon.exe)
             {
                 (Uninstall-Sysmon function)
                 If Sysmon service registry keys exist, delete them.
