@@ -33,7 +33,8 @@ If all required files are present (Sysmon binaries/config file)
             {
                 (Uninstall-Sysmon function)
                 If Sysmon service registry keys exist, delete them.
-                 *Sysmon will continue to log events until the next reboot
+                Schedule Sysmon files to delete at next reboot
+                 *Sysmon will continue to run in memory and log events until the next reboot
                  *After reboot, Sysmon will only begin logging events after next script execution
             }
         }
@@ -45,8 +46,15 @@ If all required files are present (Sysmon binaries/config file)
     Else (Sysmon service *does not* exists)
     {
         (Install-Sysmon function)
-        If Sysmon registry keys do not exist and Sysmon process is not running, install Sysmon
-        Write configuration file hash to local registry
+        If (Sysmon service registry keys *do not* exist and Sysmon process *is not* running)
+        {
+            Install Sysmon
+            Write configuration file hash to local registry
+        }
+        Else (Sysmon service registry keys exist *or* Sysmon process is running)
+        {
+            Do nothing
+        }
     }
 }
 Else (All required files *are not* present)
