@@ -61,13 +61,31 @@ changes to file creation time.
     function Uninstall-Sysmon
     {
         if ((Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon") -and (Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\SysmonDrv"))
-        #if ((Test-Path "C:\Windows\Sysmon.exe") -and (Test-Path "C:\Windows\SysmonDrv.sys"))
         {
             Write-Verbose "$(Get-Date): Uninstalling Sysmon from $ENV:COMPUTERNAME..."
             #& "C:\Windows\Sysmon.exe" -u #Causes memory_corruption BUGCHECK_STR 0x1a_2102 on some systems
             Write-Verbose "$(Get-Date): Removing Sysmon service registry keys - Sysmon will continue to run in memory"
             Remove-Item -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon" -Recurse -Force
             Remove-Item -Path "HKLM:\SYSTEM\CurrentControlSet\Services\SysmonDrv" -Recurse -Force
+
+            if ((Test-Path "C:\Windows\Sysmon.exe") -and (Test-Path "C:\Windows\SysmonDrv.sys"))
+            { #Schedule Sysmon files to delete at next reboot
+                try
+                { #Append to existing PendingFileRenameOperations registry value to delete Sysmon files at next reboot
+                    Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager" | Select-Object -ExpandProperty "PendingFileRenameOperations" -ErrorAction Stop | Out-Null
+                    Write-Verbose "$(Get-Date): Updating existing PendingFileRenameOperations registry value to delete Sysmon files at next reboot."
+                    $values = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager" -Name "PendingFileRenameOperations").PendingFileRenameOperations
+                    $values += "\??\C:\Windows\Sysmon.exe","","\??\C:\Windows\SysmonDrv.sys",""
+                    Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager" "PendingFileRenameOperations" $values
+                }
+                catch
+                { #Create PendingFileRenameOperations registry value to delete Sysmon files at next reboot
+                    Write-Verbose "$(Get-Date): Creating PendingFileRenameOperations registry value to delete Sysmon files at next reboot."
+                    New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager" -Name "PendingFileRenameOperations" `
+                    -Value "\??\C:\Windows\Sysmon.exe","","\??\C:\Windows\SysmonDrv.sys","" `
+                    -PropertyType MultiString -Force | Out-Null
+                }
+            }
         }
         else
         {
