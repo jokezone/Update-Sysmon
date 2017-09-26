@@ -1,49 +1,49 @@
 ﻿function Update-Sysmon
 {
-<#
-.SYNOPSIS
-    This function can install, uninstall, and update Sysmon. It will detect 
-if the Sysmon service exists and validate the file hash against the version 
-from the specified directory before choosing to install or update the Sysmon 
-configuration. If the hashes do not match, it will uninstall the current 
-version and install the version from the $RunDir.
+    <#
+    .SYNOPSIS
+        This function can install, uninstall, and update Sysmon. It will detect 
+    if the Sysmon service exists and validate the file hash against the version 
+    from the specified directory before choosing to install or update the Sysmon 
+    configuration. If the hashes do not match, it will uninstall the current 
+    version and install the version from the $RunDir.
 
-    Author: Thomas Connell
+        Author: Thomas Connell
 
-.DESCRIPTION
-    This function was created to aide in the deployment/maintenance of 
-the Sysmon service to a large number of computers. It is designed to 
-be run as a computer startup script or a daily system task without any 
-user interaction.
+    .DESCRIPTION
+        This function was created to aide in the deployment/maintenance of 
+    the Sysmon service to a large number of computers. It is designed to 
+    be run as a computer startup script or a daily system task without any 
+    user interaction.
 
-    System Monitor (Sysmon) is a Windows system service and device driver 
-that, once installed on a system, remains resident across system reboots to 
-monitor and log system activity to the Windows event log. It provides 
-detailed information about process creations, network connections, and 
-changes to file creation time.
+        System Monitor (Sysmon) is a Windows system service and device driver 
+    that, once installed on a system, remains resident across system reboots to 
+    monitor and log system activity to the Windows event log. It provides 
+    detailed information about process creations, network connections, and 
+    changes to file creation time.
 
-.LINK
-    Sysmon documentation:
-    https://technet.microsoft.com/en-us/sysinternals/dn798348
-    Community supported Sysmon configuration:
-    https://github.com/SwiftOnSecurity/sysmon-config
+    .LINK
+        Sysmon documentation:
+        https://technet.microsoft.com/en-us/sysinternals/dn798348
+        Community supported Sysmon configuration:
+        https://github.com/SwiftOnSecurity/sysmon-config
 
-.EXAMPLE
-    PS C:\> Update-Sysmon -Verbose
-    - Installs Sysmon using source files found in the script running directory
-.EXAMPLE
-    PS C:\> Update-Sysmon -Uninstall -Verbose
-    - Uninstalls Sysmon
-.EXAMPLE
-    PS C:\> Update-Sysmon -RunDir "C:\Installs\Sysmon" -ConfigFile "Config\workstation-sysmonconfig.xml" -Verbose
-    - Installs Sysmon using files in the specified directory and uses a specific config file name
-    - Only the configuration is updated if Sysmon is already installed
-.EXAMPLE
-    PS C:\> PowerShell.exe -Command {. "\\Path\To\Sysmon\Update-Sysmon.ps1";Update-Sysmon}
-    - Method to load and execute function from a file share without any user interaction
-#>
-	param
-	(
+    .EXAMPLE
+        PS C:\> Update-Sysmon -Verbose
+        - Installs Sysmon using source files found in the script running directory
+    .EXAMPLE
+        PS C:\> Update-Sysmon -Uninstall -Verbose
+        - Uninstalls Sysmon
+    .EXAMPLE
+        PS C:\> Update-Sysmon -RunDir "C:\Installs\Sysmon" -ConfigFile "Config\workstation-sysmonconfig.xml" -Verbose
+        - Installs Sysmon using files in the specified directory and uses a specific config file name
+        - Only the configuration is updated if Sysmon is already installed
+    .EXAMPLE
+        PS C:\> PowerShell.exe -Command {. "\\Path\To\Sysmon\Update-Sysmon.ps1";Update-Sysmon}
+        - Method to load and execute function from a file share without any user interaction
+    #>
+    param
+    (
         [Parameter(Position = 0)]
         [string]
         $RunDir = $PSScriptRoot,
@@ -52,7 +52,7 @@ changes to file creation time.
         $ConfigFile = "auto-select",
         [switch]
         $Uninstall
-	)
+    )
 
     $LogFile = $env:TEMP + "\Update-Sysmon-Log.txt"
     Get-ChildItem $LogFile | Where-Object Length -gt 1024000 | Remove-Item -Confirm:$false
