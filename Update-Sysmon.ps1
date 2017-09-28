@@ -65,13 +65,13 @@
             Write-Verbose "$(Get-Date): Uninstalling Sysmon from $ENV:COMPUTERNAME..."
             #& "C:\Windows\Sysmon.exe" -u #Causes memory_corruption BUGCHECK_STR 0x1a_2102 on some systems
             Write-Verbose "$(Get-Date): Removing Sysmon service registry keys - Sysmon will continue to run in memory"
-            Remove-Item -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon" -Recurse -Force
-            Remove-Item -Path "HKLM:\SYSTEM\CurrentControlSet\Services\SysmonDrv" -Recurse -Force
+            Remove-Item -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon" -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -Path "HKLM:\SYSTEM\CurrentControlSet\Services\SysmonDrv" -Recurse -Force -ErrorAction SilentlyContinue
 
-            if ((Test-Path "C:\Windows\Sysmon.exe") -and (Test-Path "C:\Windows\SysmonDrv.sys"))
-            { #Schedule Sysmon files to delete at next reboot
+            if ((Test-Path "C:\Windows\Sysmon.exe") -or (Test-Path "C:\Windows\SysmonDrv.sys"))
+            {   #Schedule Sysmon files to delete at next reboot
                 try
-                { #Append to existing PendingFileRenameOperations registry value to delete Sysmon files at next reboot
+                {   #Append to existing PendingFileRenameOperations registry value to delete Sysmon files at next reboot
                     Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager" | Select-Object -ExpandProperty "PendingFileRenameOperations" -ErrorAction Stop | Out-Null
                     Write-Verbose "$(Get-Date): Updating existing PendingFileRenameOperations registry value to delete Sysmon files at next reboot."
                     $values = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager" -Name "PendingFileRenameOperations").PendingFileRenameOperations
@@ -79,24 +79,28 @@
                     Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager" "PendingFileRenameOperations" $values
                 }
                 catch
-                { #Create PendingFileRenameOperations registry value to delete Sysmon files at next reboot
+                {   #Create PendingFileRenameOperations registry value to delete Sysmon files at next reboot
                     Write-Verbose "$(Get-Date): Creating PendingFileRenameOperations registry value to delete Sysmon files at next reboot."
                     New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager" -Name "PendingFileRenameOperations" `
                     -Value "\??\C:\Windows\Sysmon.exe","","\??\C:\Windows\SysmonDrv.sys","" `
                     -PropertyType MultiString -Force | Out-Null
                 }
             }
+            else
+            {
+                Write-Verbose "$(Get-Date): Unable to schedule Sysmon files to delete at next reboot becuase they do not exist."
+            }
         }
         else
         {
-            Write-Verbose "$(Get-Date): Unable to uninstall because Sysmon or SysmonDrv services are not registered. Try running Sysmon.exe -u or reboot and try again."
+            Write-Verbose "$(Get-Date): Unable to uninstall because Sysmon/SysmonDrv service registry keys are missing. Try running Sysmon.exe -u or reboot and try again."
         }
     }
 
     function Install-Sysmon([string]$RunDir,[string]$ConfigFile)
     {
         if (-not((Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon") -and (Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\SysmonDrv") -and (Get-Process -Name "Sysmon")))
-        { #Verify service registry keys and process are not present before attempting an install
+        {   #Verify service registry keys and process are not present before attempting an install
             if ([Environment]::Is64BitOperatingSystem)
             {
                 Write-Verbose "$(Get-Date): Installing 64-bit Sysmon..."
@@ -135,12 +139,20 @@
                 {
                     return $true
                 }
+                else
+                {
+                    Write-Verbose "$(Get-Date): Validation failed because local Sysmon hash does not match source file hash."
+                }
             }
             else
             {   #32-bit validation
                 if ((Get-FileHash -Path "C:\Windows\Sysmon.exe" -Algorithm SHA256).Hash -eq ((Get-FileHash -Path $RunDir\Sysmon.exe -Algorithm SHA256).Hash))
                 {
                     return $true
+                }
+                else
+                {
+                    Write-Verbose "$(Get-Date): Validation failed because local Sysmon hash does not match source file hash."
                 }
             }
         }
@@ -209,18 +221,17 @@
     Write-Verbose "$(Get-Date): Configuration file: $ConfigFile"
 
     if ((Test-Path "$RunDir\Sysmon64.exe") -and (Test-Path "$RunDir\Sysmon.exe") -and (Test-Path "$RunDir\$ConfigFile"))
-    { #All required files are present
+    {   #All required files are present
         if ((Get-Service -Name Sysmon,SysmonDrv -ErrorAction SilentlyContinue).Name -match "Sysmon")
         {   #Sysmon service exists
             if (Validate-Sysmon -RunDir $RunDir)
-            { #Local Sysmon file hash matches source file hash
+            {   #Local Sysmon file hash matches source file hash
                 #Start Sysmon services if they are stopped
                 Get-Service -Name Sysmon,SysmonDrv | Where-Object Status -eq "Stopped" | Start-Service
                 Apply-SysmonConfig -RunDir $RunDir -ConfigFile $ConfigFile
             }
             else
-            {
-                Write-Verbose "$(Get-Date): Local Sysmon hash does *not* match source file hash. Sysmon will be uninstalled."
+            {   #Local Sysmon file hash does not match source file hash
                 Uninstall-Sysmon
             }
         }
