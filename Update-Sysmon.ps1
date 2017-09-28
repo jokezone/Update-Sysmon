@@ -60,7 +60,7 @@
 
     function Uninstall-Sysmon
     {
-        if ((Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon") -and (Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\SysmonDrv"))
+        if ((Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon") -or (Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\SysmonDrv"))
         {
             Write-Verbose "$(Get-Date): Uninstalling Sysmon from $ENV:COMPUTERNAME..."
             #& "C:\Windows\Sysmon.exe" -u #Causes memory_corruption BUGCHECK_STR 0x1a_2102 on some systems
@@ -89,7 +89,7 @@
         }
         else
         {
-            Write-Verbose "$(Get-Date): Unable to uninstall because Sysmon services are not registered. Please reboot and try again."
+            Write-Verbose "$(Get-Date): Unable to uninstall because Sysmon or SysmonDrv services are not registered. Try running Sysmon.exe -u or reboot and try again."
         }
     }
 
@@ -107,10 +107,17 @@
                 Write-Verbose "$(Get-Date): Installing 32-bit Sysmon..."
                 & "$RunDir\Sysmon.exe" -accepteula -i "$RunDir\$ConfigFile"
             }
-            Write-Verbose "$(Get-Date): Sysmon installed - Configuration file is being hashed for the first time."
-            New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon" -Name "ConfigFileHash" `
-            -Value (Get-FileHash -Path "$RunDir\$ConfigFile" -Algorithm SHA256).Hash `
-            -PropertyType STRING -Force | Out-Null
+            if (Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon")
+            {
+                Write-Verbose "$(Get-Date): Sysmon installed - Configuration file is being hashed for the first time."
+                New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon" -Name "ConfigFileHash" `
+                -Value (Get-FileHash -Path "$RunDir\$ConfigFile" -Algorithm SHA256).Hash `
+                -PropertyType STRING -Force | Out-Null
+            }
+            else
+            {
+                Write-Verbose "$(Get-Date): Sysmon install failed."
+            }
         }
         else
         {
@@ -152,7 +159,7 @@
                 Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon" | Select-Object -ExpandProperty "ConfigFileHash" -ErrorAction Stop | Out-Null
                 if ((Get-FileHash -Path "$RunDir\$ConfigFile" -Algorithm SHA256).Hash -ne (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon" | Select-Object -ExpandProperty "ConfigFileHash"))
                 {
-                    Write-Verbose "$(Get-Date): Configuration file hash has changed, applying new Sysmon configuration: $RunDir\$ConfigFile"
+                    Write-Verbose "$(Get-Date): Configuration file hash has changed, applying Sysmon configuration: $RunDir\$ConfigFile"
                     & "C:\Windows\Sysmon.exe" -accepteula -c "$RunDir\$ConfigFile"
                     Write-Verbose "$(Get-Date): Updating configuration file hash in local registry"
                     New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon" -Name "ConfigFileHash" `
@@ -162,7 +169,9 @@
             }
             catch
             {
-                Write-Verbose "$(Get-Date): Hash not found - Writing configuration file hash to local registry."
+                Write-Verbose "$(Get-Date): Configuration file hash not found, applying Sysmon configuration: $RunDir\$ConfigFile"
+                & "C:\Windows\Sysmon.exe" -accepteula -c "$RunDir\$ConfigFile"
+                Write-Verbose "$(Get-Date): Writing configuration file hash to local registry."
                 New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon" -Name "ConfigFileHash" `
                 -Value (Get-FileHash -Path "$RunDir\$ConfigFile" -Algorithm SHA256).Hash `
                 -PropertyType STRING -Force | Out-Null
@@ -201,7 +210,7 @@
 
     if ((Test-Path "$RunDir\Sysmon64.exe") -and (Test-Path "$RunDir\Sysmon.exe") -and (Test-Path "$RunDir\$ConfigFile"))
     { #All required files are present
-        if ((Get-Service -Name "Sysmon" -ErrorAction SilentlyContinue).Name -eq "Sysmon")
+        if ((Get-Service -Name Sysmon,SysmonDrv -ErrorAction SilentlyContinue).Name -match "Sysmon")
         {   #Sysmon service exists
             if (Validate-Sysmon -RunDir $RunDir)
             { #Local Sysmon file hash matches source file hash

@@ -1,6 +1,6 @@
 If all required files are present (Sysmon binaries/config file)
 {
-    If Sysmon service exists
+    If Sysmon or SysmonDrv service exists
     {
         (Validate-Sysmon function)
         If (Sysmon service registry keys exist)
@@ -13,7 +13,7 @@ If all required files are present (Sysmon binaries/config file)
                 {
                     If (Configuration file hash *does not* match RunDir hash)
                     {
-                        Apply configuration and update hash in local registry
+                        Apply configuration and update hash to local registry
                     }
                     Else (Configuration file hash matches RunDir hash)
                     {
@@ -21,7 +21,7 @@ If all required files are present (Sysmon binaries/config file)
                     }
                     If (Configuration file hash *is missing* from local registry)
                     {
-                        Write configuration file hash to local registry
+                        Apply configuration and write hash to local registry
                     }
                 }
                 Else (Sysmon registry key or process *are not* present)
@@ -32,7 +32,7 @@ If all required files are present (Sysmon binaries/config file)
             Else (hash of local Sysmon.exe *does not* match hash of RunDir Sysmon.exe)
             {
                 (Uninstall-Sysmon function)
-                If Sysmon service registry keys exist, delete them.
+                If either Sysmon or SysmonDrv service registry keys exist, delete them.
                 Schedule Sysmon files to delete at next reboot
                  *Sysmon will continue to run in memory and log events until the next reboot
                  *After reboot, Sysmon will only begin logging events after next script execution
@@ -43,7 +43,7 @@ If all required files are present (Sysmon binaries/config file)
             Do nothing
         }
     }
-    Else (Sysmon service *does not* exists)
+    Else (Sysmon/SysmonDrv service *does not* exist)
     {
         (Install-Sysmon function)
         If (Sysmon service registry keys *do not* exist and Sysmon process *is not* running)
