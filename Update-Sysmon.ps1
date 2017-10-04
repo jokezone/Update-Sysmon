@@ -212,9 +212,9 @@
         5 = Primary Domain Controller
         #>
         $Role = (Get-WmiObject Win32_ComputerSystem).DomainRole
-        if ($Role -eq 1) {$ConfigFile = "Config\sysmonconfig-workstation2-production.xml"}
-        if ($Role -eq 3) {$ConfigFile = "Config\sysmonconfig-memberserver2-production.xml"}
-        if ($Role -ge 4) {$ConfigFile = "Config\sysmonconfig-domaincontroller2-production.xml"}
+        if ($Role -eq 1) {$ConfigFile = "Config\sysmonconfig-workstation-production.xml"}
+        if ($Role -eq 3) {$ConfigFile = "Config\sysmonconfig-memberserver-production.xml"}
+        if ($Role -ge 4) {$ConfigFile = "Config\sysmonconfig-domaincontroller-production.xml"}
     }
 
     Write-Verbose "$(Get-Date): Script RunDir: $RunDir"
