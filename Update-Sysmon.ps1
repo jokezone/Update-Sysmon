@@ -115,7 +115,7 @@
             {
                 Write-Verbose "$(Get-Date): Sysmon installed - Configuration file is being hashed for the first time."
                 New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon" -Name "ConfigFileHash" `
-                -Value (Get-FileHash -Path "$RunDir\$ConfigFile" -Algorithm SHA256).Hash `
+                -Value (Get-SHA256FileHash "$RunDir\$ConfigFile") `
                 -PropertyType STRING -Force | Out-Null
             }
             else
@@ -135,7 +135,7 @@
         {
             if ([Environment]::Is64BitOperatingSystem)
             {   #64-bit validation
-                if ((Get-FileHash -Path "C:\Windows\Sysmon.exe" -Algorithm SHA256).Hash -eq ((Get-FileHash -Path $RunDir\Sysmon64.exe -Algorithm SHA256).Hash))
+                if ((Get-SHA256FileHash "C:\Windows\Sysmon.exe") -eq (Get-SHA256FileHash $RunDir\Sysmon64.exe))
                 {
                     return $true
                 }
@@ -146,7 +146,7 @@
             }
             else
             {   #32-bit validation
-                if ((Get-FileHash -Path "C:\Windows\Sysmon.exe" -Algorithm SHA256).Hash -eq ((Get-FileHash -Path $RunDir\Sysmon.exe -Algorithm SHA256).Hash))
+                if ((Get-SHA256FileHash "C:\Windows\Sysmon.exe") -eq (Get-SHA256FileHash $RunDir\Sysmon.exe))
                 {
                     return $true
                 }
@@ -169,7 +169,7 @@
             try
             {
                 Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon" | Select-Object -ExpandProperty "ConfigFileHash" -ErrorAction Stop | Out-Null
-                if ((Get-FileHash -Path "$RunDir\$ConfigFile" -Algorithm SHA256).Hash -ne (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon" | Select-Object -ExpandProperty "ConfigFileHash"))
+                if ((Get-SHA256FileHash "$RunDir\$ConfigFile") -ne (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon" | Select-Object -ExpandProperty "ConfigFileHash"))
                 {
                     Write-Verbose "$(Get-Date): Configuration file hash has changed, applying Sysmon configuration: $RunDir\$ConfigFile"
                     $output = Invoke-Expression "C:\Windows\Sysmon.exe -accepteula -c `"$RunDir\$ConfigFile`"" 2>&1
@@ -177,7 +177,7 @@
                     {
                         Write-Verbose "$(Get-Date): Updating configuration file hash in local registry"
                         New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon" -Name "ConfigFileHash" `
-                        -Value (Get-FileHash -Path "$RunDir\$ConfigFile" -Algorithm SHA256).Hash `
+                        -Value (Get-SHA256FileHash "$RunDir\$ConfigFile") `
                         -PropertyType STRING -Force | Out-Null
                     }
                     else
@@ -194,7 +194,7 @@
                 {
                     Write-Verbose "$(Get-Date): Writing configuration file hash to local registry."
                     New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon" -Name "ConfigFileHash" `
-                    -Value (Get-FileHash -Path "$RunDir\$ConfigFile" -Algorithm SHA256).Hash `
+                    -Value (Get-SHA256FileHash "$RunDir\$ConfigFile") `
                     -PropertyType STRING -Force | Out-Null
                 }
                 else
@@ -207,6 +207,11 @@
         {
             Write-Verbose "$(Get-Date): Unable to apply configuration because Sysmon registry key or process are not present"
         }
+    }
+
+    function Get-SHA256FileHash([string]$File)
+    {   #Used instead of Get-FileHash due to failing FIPS cryptographic algorithm validation
+        [System.BitConverter]::ToString((New-Object -TypeName System.Security.Cryptography.SHA256Cng).ComputeHash([System.IO.File]::ReadAllBytes($File))).Replace("-", "")
     }
 
     if ($Uninstall)
