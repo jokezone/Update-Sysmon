@@ -63,7 +63,7 @@
         if ((Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon") -or (Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\SysmonDrv"))
         {
             Write-Verbose "$(Get-Date): Uninstalling Sysmon from $ENV:COMPUTERNAME..."
-            #& "C:\Windows\Sysmon.exe" -u #Causes memory_corruption BUGCHECK_STR 0x1a_2102 on some systems
+            #Invoke-Expression "C:\Windows\Sysmon.exe" -u #Causes memory_corruption BUGCHECK_STR 0x1a_2102 on some systems
             Write-Verbose "$(Get-Date): Removing Sysmon service registry keys - Sysmon will continue to run in memory"
             Remove-Item -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon" -Recurse -Force -ErrorAction SilentlyContinue
             Remove-Item -Path "HKLM:\SYSTEM\CurrentControlSet\Services\SysmonDrv" -Recurse -Force -ErrorAction SilentlyContinue
@@ -104,12 +104,12 @@
             if ([Environment]::Is64BitOperatingSystem)
             {
                 Write-Verbose "$(Get-Date): Installing 64-bit Sysmon..."
-                & "$RunDir\Sysmon64.exe" -accepteula -i "$RunDir\$ConfigFile"
+                Invoke-Expression "$RunDir\Sysmon64.exe" -accepteula -i "$RunDir\$ConfigFile"
             }
             else
             {
                 Write-Verbose "$(Get-Date): Installing 32-bit Sysmon..."
-                & "$RunDir\Sysmon.exe" -accepteula -i "$RunDir\$ConfigFile"
+                Invoke-Expression "$RunDir\Sysmon.exe" -accepteula -i "$RunDir\$ConfigFile"
             }
             if (Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon")
             {
@@ -172,21 +172,35 @@
                 if ((Get-FileHash -Path "$RunDir\$ConfigFile" -Algorithm SHA256).Hash -ne (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon" | Select-Object -ExpandProperty "ConfigFileHash"))
                 {
                     Write-Verbose "$(Get-Date): Configuration file hash has changed, applying Sysmon configuration: $RunDir\$ConfigFile"
-                    & "C:\Windows\Sysmon.exe" -accepteula -c "$RunDir\$ConfigFile"
-                    Write-Verbose "$(Get-Date): Updating configuration file hash in local registry"
-                    New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon" -Name "ConfigFileHash" `
-                    -Value (Get-FileHash -Path "$RunDir\$ConfigFile" -Algorithm SHA256).Hash `
-                    -PropertyType STRING -Force | Out-Null
+                    $output = Invoke-Expression "C:\Windows\Sysmon.exe -accepteula -c `"$RunDir\$ConfigFile`"" 2>&1
+                    if ($output -match "Configuration updated")
+                    {
+                        Write-Verbose "$(Get-Date): Updating configuration file hash in local registry"
+                        New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon" -Name "ConfigFileHash" `
+                        -Value (Get-FileHash -Path "$RunDir\$ConfigFile" -Algorithm SHA256).Hash `
+                        -PropertyType STRING -Force | Out-Null
+                    }
+                    else
+                    {
+                        Write-Verbose "$(Get-Date): Sysmon configuration update failed"
+                    }
                 }
             }
             catch
             {
                 Write-Verbose "$(Get-Date): Configuration file hash not found, applying Sysmon configuration: $RunDir\$ConfigFile"
-                & "C:\Windows\Sysmon.exe" -accepteula -c "$RunDir\$ConfigFile"
-                Write-Verbose "$(Get-Date): Writing configuration file hash to local registry."
-                New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon" -Name "ConfigFileHash" `
-                -Value (Get-FileHash -Path "$RunDir\$ConfigFile" -Algorithm SHA256).Hash `
-                -PropertyType STRING -Force | Out-Null
+                $output = Invoke-Expression "C:\Windows\Sysmon.exe -accepteula -c `"$RunDir\$ConfigFile`"" 2>&1
+                if ($output -match "Configuration updated")
+                {
+                    Write-Verbose "$(Get-Date): Writing configuration file hash to local registry."
+                    New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon" -Name "ConfigFileHash" `
+                    -Value (Get-FileHash -Path "$RunDir\$ConfigFile" -Algorithm SHA256).Hash `
+                    -PropertyType STRING -Force | Out-Null
+                }
+                else
+                {
+                    Write-Verbose "$(Get-Date): Sysmon configuration update failed"
+                }
             }
         }
         else
