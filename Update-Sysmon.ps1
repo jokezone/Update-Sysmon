@@ -63,7 +63,7 @@
         if ((Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon") -or (Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\SysmonDrv"))
         {
             Write-Verbose "$(Get-Date): Uninstalling Sysmon from $ENV:COMPUTERNAME..."
-            #Invoke-Expression "C:\Windows\Sysmon.exe" -u #Causes memory_corruption BUGCHECK_STR 0x1a_2102 on some systems
+            #& "C:\Windows\Sysmon.exe" -u #Causes memory_corruption BUGCHECK_STR 0x1a_2102 on some systems
             Write-Verbose "$(Get-Date): Removing Sysmon service registry keys - Sysmon will continue to run in memory"
             Remove-Item -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon" -Recurse -Force -ErrorAction SilentlyContinue
             Remove-Item -Path "HKLM:\SYSTEM\CurrentControlSet\Services\SysmonDrv" -Recurse -Force -ErrorAction SilentlyContinue
@@ -104,12 +104,12 @@
             if ([Environment]::Is64BitOperatingSystem)
             {
                 Write-Verbose "$(Get-Date): Installing 64-bit Sysmon..."
-                Invoke-Expression "$RunDir\Sysmon64.exe" -accepteula -i "$RunDir\$ConfigFile"
+                Invoke-Expression "$RunDir\Sysmon64.exe -accepteula -i $RunDir\$ConfigFile"
             }
             else
             {
                 Write-Verbose "$(Get-Date): Installing 32-bit Sysmon..."
-                Invoke-Expression "$RunDir\Sysmon.exe" -accepteula -i "$RunDir\$ConfigFile"
+                Invoke-Expression "$RunDir\Sysmon.exe -accepteula -i $RunDir\$ConfigFile"
             }
             if (Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon")
             {
