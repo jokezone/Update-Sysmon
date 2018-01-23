@@ -50,12 +50,16 @@
         [Parameter(Position = 1)]
         [string]
         $ConfigFile = "auto-select",
+        [string]
+        $LogFile = $env:TEMP + "\Update-Sysmon-Log.txt",
         [switch]
         $Uninstall
     )
 
-    $LogFile = $env:TEMP + "\Update-Sysmon-Log.txt"
-    Get-ChildItem $LogFile | Where-Object Length -gt 1024000 | Remove-Item -Confirm:$false
+    if (Test-Path -Path $LogFile)
+    {   #Delete log file if it grows too large
+        Get-ChildItem $LogFile | Where-Object Length -gt 2048000 | Remove-Item -Confirm:$false
+    }
     Start-Transcript $LogFile -Append
 
     function Uninstall-Sysmon
@@ -63,7 +67,7 @@
         if ((Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon") -or (Test-Path -Path "HKLM:\SYSTEM\CurrentControlSet\Services\SysmonDrv"))
         {
             Write-Verbose "$(Get-Date): Uninstalling Sysmon from $ENV:COMPUTERNAME..."
-            #& "C:\Windows\Sysmon.exe" -u #Causes memory_corruption BUGCHECK_STR 0x1a_2102 on some systems
+            #& "C:\Windows\Sysmon.exe" -u #v6.02 Sysmon causes memory_corruption BUGCHECK_STR 0x1a_2102 on some systems
             Write-Verbose "$(Get-Date): Removing Sysmon service registry keys - Sysmon will continue to run in memory"
             Remove-Item -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon" -Recurse -Force -ErrorAction SilentlyContinue
             Remove-Item -Path "HKLM:\SYSTEM\CurrentControlSet\Services\SysmonDrv" -Recurse -Force -ErrorAction SilentlyContinue
@@ -172,7 +176,8 @@
                 if ((Get-SHA256FileHash "$RunDir\$ConfigFile") -ne (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Sysmon" | Select-Object -ExpandProperty "ConfigFileHash"))
                 {
                     Write-Verbose "$(Get-Date): Configuration file hash has changed, applying Sysmon configuration: $RunDir\$ConfigFile"
-                    $output = Invoke-Expression "C:\Windows\Sysmon.exe -accepteula -c `"$RunDir\$ConfigFile`"" 2>&1
+                    $output = Invoke-Expression "C:\Windows\Sysmon.exe -accepteula -c `"$RunDir\$ConfigFile`""
+                    $output
                     if ($output -match "Configuration updated")
                     {
                         Write-Verbose "$(Get-Date): Updating configuration file hash in local registry"
@@ -189,7 +194,8 @@
             catch
             {
                 Write-Verbose "$(Get-Date): Configuration file hash not found, applying Sysmon configuration: $RunDir\$ConfigFile"
-                $output = Invoke-Expression "C:\Windows\Sysmon.exe -accepteula -c `"$RunDir\$ConfigFile`"" 2>&1
+                $output = Invoke-Expression "C:\Windows\Sysmon.exe -accepteula -c `"$RunDir\$ConfigFile`""
+                $output
                 if ($output -match "Configuration updated")
                 {
                     Write-Verbose "$(Get-Date): Writing configuration file hash to local registry."
