@@ -51,11 +51,12 @@
         [string]
         $ConfigFile = "auto-select",
         [string]
-        $LogFile = $env:TEMP + "\Update-Sysmon-Log.txt",
+        $LogDir = $env:TEMP,
         [switch]
         $Uninstall
     )
 
+    $LogFile = $LogDir + "\$ENV:COMPUTERNAME-Update-Sysmon-Log.txt"
     if (Test-Path -Path $LogFile)
     {   #Delete log file if it grows too large
         Get-ChildItem $LogFile | Where-Object Length -gt 2048000 | Remove-Item -Confirm:$false
