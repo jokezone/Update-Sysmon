@@ -264,6 +264,10 @@
         else
         {   #Sysmon service is missing, install it!
             Install-Sysmon -RunDir $RunDir -ConfigFile $ConfigFile
+
+            #Use GPUpdate to force event forwarding client to re-evaluate event subscriptions
+            Start-Sleep -Seconds 10
+            $output = Invoke-Expression "gpupdate /force /target:computer"
         }
     }
     else
