@@ -2,24 +2,25 @@
 {
     <#
     .SYNOPSIS
-        This function can install, uninstall, and update Sysmon. It will detect 
-    if the Sysmon service exists and validate the file hash against the version 
-    from the specified directory before choosing to install or update the Sysmon 
-    configuration. If the hashes do not match, it will uninstall the current 
+        This function can install, uninstall, and update Sysmon. It will detect
+    if the Sysmon service exists and validate the file hash against the version
+    from the specified directory before choosing to install or update the Sysmon
+    configuration. If the hashes do not match, it will uninstall the current
     version and install the version from the $RunDir.
 
         Author: Thomas Connell
 
     .DESCRIPTION
-        This function was created to aide in the deployment/maintenance of 
-    the Sysmon service to a large number of computers. It is designed to 
-    be run as a computer startup script or a daily system task without any 
-    user interaction.
+        This function was created to aide in the deployment/maintenance of
+    the Sysmon service to a large number of computers. It is designed to
+    be run as a computer startup script or a scheduled system task without any
+    user interaction. Standalone systems must have a configuration specified,
+    while domain joined systems can auto-select a configuration.
 
-        System Monitor (Sysmon) is a Windows system service and device driver 
-    that, once installed on a system, remains resident across system reboots to 
-    monitor and log system activity to the Windows event log. It provides 
-    detailed information about process creations, network connections, and 
+        System Monitor (Sysmon) is a Windows system service and device driver
+    that, once installed on a system, remains resident across system reboots to
+    monitor and log system activity to the Windows event log. It provides
+    detailed information about process creations, network connections, and
     changes to file creation time.
 
     .LINK
@@ -49,7 +50,7 @@
         $RunDir = $PSScriptRoot,
         [Parameter(Position = 1)]
         [string]
-        $ConfigFile = "auto-select",
+        $ConfigFile = "",
         [string]
         $LogDir = $env:TEMP,
         [switch]
@@ -227,22 +228,28 @@
         break
     }
 
-    if ($ConfigFile -eq "auto-select")
+    function Select-Config([string]$ConfigFile)
     {
-        <# Select configuration file based on OS type
-        0 = Standalone Workstation
-        1 = Member Workstation
-        2 = Standalone Server
-        3 = Member Server
-        4 = Backup Domain Controller
-        5 = Primary Domain Controller
-        #>
-        $Role = (Get-WmiObject Win32_ComputerSystem).DomainRole
-        if ($Role -eq 1) {$ConfigFile = "Config\sysmonconfig-workstation-production.xml"}
-        if ($Role -eq 3) {$ConfigFile = "Config\sysmonconfig-memberserver-production.xml"}
-        if ($Role -ge 4) {$ConfigFile = "Config\sysmonconfig-domaincontroller-production.xml"}
+        if (-not($ConfigFile))
+        {
+            <# Select configuration file based on OS type:
+            0 = Standalone Workstation
+            1 = Member Workstation
+            2 = Standalone Server
+            3 = Member Server
+            4 = Backup Domain Controller
+            5 = Primary Domain Controller
+            #>
+            $Role = (Get-WmiObject Win32_ComputerSystem).DomainRole
+            if ($Role -eq 1) {$OSType = "workstation"}
+            if ($Role -eq 3) {$OSType = "memberserver"}
+            if ($Role -ge 4) {$OSType = "domaincontroller"}
+            $ConfigFile = "Config\sysmonconfig-$OSType-production.xml"
+        }
+        return
     }
 
+    Select-Config $ConfigFile
     Write-Verbose "$(Get-Date): Script RunDir: $RunDir"
     Write-Verbose "$(Get-Date): Configuration file: $ConfigFile"
 
