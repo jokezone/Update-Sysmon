@@ -274,10 +274,10 @@
             if ($Role -ge 4) {$OSType = "domaincontroller"}
             $ConfigFile = "Config\sysmonconfig-$OSType-production.xml"
         }
-        return
+        return $ConfigFile
     }
 
-    Select-Config $ConfigFile
+    $ConfigFile = Select-Config $ConfigFile
     Write-Verbose "$(Get-Date): Service name: $SvcName"
     Write-Verbose "$(Get-Date): Script RunDir: $RunDir"
     Write-Verbose "$(Get-Date): Configuration file: $ConfigFile"
@@ -294,7 +294,7 @@
             }
             else
             {   #Local Sysmon file hash does not match source file hash
-                Uninstall-Sysmon -SvcName $SvcName -Force
+                Uninstall-Sysmon -SvcName $SvcName -Graceful
             }
         }
         else
