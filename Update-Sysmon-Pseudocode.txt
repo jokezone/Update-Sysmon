@@ -50,6 +50,7 @@ If all required files are present (Sysmon binaries/config file)
         {
             Install Sysmon
             Write configuration file hash to local registry
+            Force event forwarding client to re-evaluate event subscriptions
         }
         Else (Sysmon service registry keys exist *or* Sysmon process is running)
         {
