@@ -34,13 +34,14 @@
     .EXAMPLE
         PS C:\> Update-Sysmon -Verbose
         - Installs Sysmon using "Sysmon.exe" found in the script running directory x86/x64 sub-folders
+        - If Sysmon is already installed, the configuration will be checked for updates
     .EXAMPLE
         PS C:\> Update-Sysmon -SvcName "StealthService" -Verbose
         - Installs Sysmon using "StealthService.exe" found in the script running directory x86/x64 sub-folders
         - The service and running process will be named "StealthService"
     .EXAMPLE
-        PS C:\> Update-Sysmon -Uninstall -Verbose
-        - Uninstalls Sysmon. Optionally specify a custom service name with the -SvcName switch
+        PS C:\> Update-Sysmon -Uninstall -SvcName "Sysmon" -UninstallMethod "Force" -Verbose
+        - Forcibly uninstalls Sysmon service named "Sysmon". You may also use the Graceful uninstall method which requires a reboot
     .EXAMPLE
         PS C:\> Update-Sysmon -RunDir "C:\Installs\Sysmon" -ConfigFile "Config\workstation-sysmonconfig.xml" -Verbose
         - Installs Sysmon using files in the specified directory and uses a specific config file name
@@ -62,7 +63,10 @@
         [string]
         $SvcName = "Sysmon",
         [switch]
-        $Uninstall
+        $Uninstall,
+        [ValidateSet("Graceful","Force")]
+        [string]
+        $UninstallMethod
     )
 
     $LogFile = $LogDir + "\$ENV:COMPUTERNAME-Update-Sysmon-Log.txt"
@@ -72,21 +76,22 @@
     }
     Start-Transcript $LogFile -Append
 
-    function Uninstall-Sysmon([switch]$Force,[switch]$Graceful,[string]$SvcName)
+    function Uninstall-Sysmon([string]$UninstallMethod,[string]$SvcName)
     {
-    # Use the -Force switch to uninstall Sysmon without requiring a reboot.
-    # Use the -Graceful switch if you experience system crashes during uninstalls.
+    # Use the Force uninstall method to uninstall Sysmon without requiring a reboot
+    # Use the Graceful uninstall method to avoid system crashes during uninstall
+        if (-not($UninstallMethod)){$UninstallMethod = "Force"}
         Write-Verbose "$(Get-Date): Uninstalling Sysmon from $ENV:COMPUTERNAME..."
         $SysmonSvcRegPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$SvcName"
         $SysmonDrvRegPath = "HKLM:\SYSTEM\CurrentControlSet\Services\SysmonDrv"
         $SysmonExePath = "C:\Windows\$SvcName.exe"
         if ((Test-Path -Path $SysmonSvcRegPath) -or (Test-Path -Path $SysmonDrvRegPath))
         {
-            if ($Force)
+            if ($UninstallMethod -eq "Force")
             {
             & $SysmonExePath -u #v6.02 Sysmon causes memory_corruption BUGCHECK_STR 0x1a_2102 on some systems
             }
-            if ($Graceful)
+            if ($UninstallMethod -eq "Graceful")
             {
                 Write-Verbose "$(Get-Date): Removing Sysmon service registry keys - Sysmon will continue to run in memory"
                 Remove-Item -Path $SysmonSvcRegPath -Recurse -Force -ErrorAction SilentlyContinue
@@ -252,7 +257,7 @@
 
     if ($Uninstall)
     {
-        Uninstall-Sysmon -SvcName $SvcName -Force
+        Uninstall-Sysmon -SvcName $SvcName -UninstallMethod $UninstallMethod
         break
     }
 
@@ -294,7 +299,7 @@
             }
             else
             {   #Local Sysmon file hash does not match source file hash
-                Uninstall-Sysmon -SvcName $SvcName -Graceful
+                Uninstall-Sysmon -SvcName $SvcName -UninstallMethod $UninstallMethod
             }
         }
         else
