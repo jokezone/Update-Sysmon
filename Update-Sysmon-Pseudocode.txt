@@ -1,0 +1,64 @@
+If all required files are present (Sysmon binaries/config file)
+{
+    If Sysmon or SysmonDrv service exists
+    {
+        (Validate-Sysmon function)
+        If (Sysmon service registry keys exist)
+        {
+            If hash of local Sysmon.exe matches hash of RunDir Sysmon.exe
+            {
+                Verify Sysmon/SysmonDrv services are started
+                (Apply-SysmonConfig function)
+                If (Sysmon service registry key exists and Sysmon.exe process is running)
+                {
+                    If (Configuration file hash *does not* match RunDir hash)
+                    {
+                        Apply configuration and update hash to local registry
+                    }
+                    Else (Configuration file hash matches RunDir hash)
+                    {
+                        Do nothing
+                    }
+                    If (Configuration file hash *is missing* from local registry)
+                    {
+                        Apply configuration and write hash to local registry
+                    }
+                }
+                Else (Sysmon registry key or process *are not* present)
+                {
+                    Do nothing
+                }
+            }
+            Else (hash of local Sysmon.exe *does not* match hash of RunDir Sysmon.exe)
+            {
+                (Uninstall-Sysmon function)
+                If either Sysmon or SysmonDrv service registry keys exist, delete them.
+                Schedule Sysmon files to delete at next reboot
+                 *Sysmon will continue to run in memory and log events until the next reboot
+                 *After reboot, Sysmon will only begin logging events after next script execution
+            }
+        }
+        Else (Sysmon service registry keys *do not* exist)
+        {
+            Do nothing
+        }
+    }
+    Else (Sysmon/SysmonDrv service *does not* exist)
+    {
+        (Install-Sysmon function)
+        If (Sysmon service registry keys *do not* exist and Sysmon process *is not* running)
+        {
+            Install Sysmon
+            Write configuration file hash to local registry
+            Force event forwarding client to re-evaluate event subscriptions
+        }
+        Else (Sysmon service registry keys exist *or* Sysmon process is running)
+        {
+            Do nothing
+        }
+    }
+}
+Else (All required files *are not* present)
+{
+    Do nothing
+}
