@@ -26,6 +26,8 @@
     changes to file creation time.
 
     .LINK
+        Source project:
+        https://github.com/jokezone/Update-Sysmon
         Sysmon documentation:
         https://technet.microsoft.com/en-us/sysinternals/dn798348
         Community supported Sysmon configuration:
