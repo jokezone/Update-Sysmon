@@ -106,6 +106,10 @@ function Get-SysmonEventData {
             '16' = 'ConfigChange'
             '17' = 'PipeCreated'
             '18' = 'PipeConnected'
+            '19' = 'WmiEventFilterActivityDetected'
+            '20' = 'WmiEventConsumerActivityDetected'
+            '21' = 'WmiEventConsumerToFilterActivityDetected'
+            '22' = 'DNSQuery'
             '255' = 'Error'
             
         }
