@@ -85,6 +85,10 @@ function Get-SysmonEventData {
             ConfigChange = 16
             PipeCreated = 17
             PipeConnected = 18
+            WmiEventFilterActivityDetected = 19
+            WmiEventConsumerActivityDetected = 20
+            WmiEventConsumerToFilterActivityDetected = 21
+            DNSQuery = 22
             Error = 255
         }
         
