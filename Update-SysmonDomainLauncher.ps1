@@ -1,7 +1,12 @@
 <#
 .SYNOPSIS
     This script will set the Update-Sysmon parameters based on the domain computer account role and group membership.
+    This allows you to deploy a single policy to all systems while applying Sysmon configurations tailored to the 
+    Operating System type (workstation, member server, or domain controller). You can also apply custom settings 
+    based on AD security group membership. This is useful for re-directing a group of test computers to a Sysmon 
+    deployment share containing a new version of the Sysmon utility along with configuration files for that version.
     Author: Thomas Connell
+    Source project: https://github.com/jokezone/Update-Sysmon
 #>
 
 $FileShare = "\\FILESERVER\ShareName"
@@ -47,8 +52,6 @@ try
     if($groups -match $groupToMatch)
     {
         $ConfigFile = "Config\sysmonconfig-$OSType-verbose.xml"
-        $RunDir = $PSScriptRoot + "\Testing-CurrentVersion"
-        $UninstallMethod = "Graceful"
         $LogDir = $FileShare + "\Sysmon-Logs\Verbose"
     }
     $groupToMatch = "Sysmon-Testing-NewVersion"
