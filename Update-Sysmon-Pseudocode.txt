@@ -1,6 +1,17 @@
 If all required files are present (Sysmon binaries/config file)
 {
-    If Sysmon or SysmonDrv service exists
+    If a graceful uninstall is currently pending
+    {
+        Do nothing; Exit script
+    }
+    If the target Sysmon service name does not match the currently installed service name
+    {
+        Update the service name variable to use the installed service name
+        *The service is detected based on the Sysmon signature service description
+        *This will result in a hash mis-match causing Sysmon to be uninstalled
+        *Sysmon will re-install under the new service name after next script execution
+    }
+    If Sysmon service exists
     {
         (Validate-Sysmon function)
         If (Sysmon service registry keys exist)
@@ -31,11 +42,16 @@ If all required files are present (Sysmon binaries/config file)
             }
             Else (hash of local Sysmon.exe *does not* match hash of RunDir Sysmon.exe)
             {
-                (Uninstall-Sysmon function)
+                (Uninstall-Sysmon function "Graceful" method)
                 If either Sysmon or SysmonDrv service registry keys exist, delete them.
                 Schedule Sysmon files to delete at next reboot
-                 *Sysmon will continue to run in memory and log events until the next reboot
-                 *After reboot, Sysmon will only begin logging events after next script execution
+                *Sysmon will continue to run in memory and log events until the next reboot
+                *After reboot, Sysmon will only begin logging events after next script execution
+                
+                (Uninstall-Sysmon function "Force" method)
+                If either Sysmon or SysmonDrv service registry keys exist, foribly remove Sysmon with the -u swtich
+                *This method has caused BSoD system crashes on about 3% of systems tested; Only recommended when testing
+                *Sysmon will only begin logging events after next script execution
             }
         }
         Else (Sysmon service registry keys *do not* exist)

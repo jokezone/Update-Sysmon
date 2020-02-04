@@ -84,9 +84,10 @@
     # Use the Graceful uninstall method to avoid system crashes during uninstall
         if (-not($UninstallMethod)){$UninstallMethod = "Force"}
         Write-Verbose "$(Get-Date): Uninstalling Sysmon from $ENV:COMPUTERNAME..."
+        $SysmonExePath = "$env:windir\$SvcName.exe"
         $SysmonSvcRegPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$SvcName"
         $SysmonDrvRegPath = "HKLM:\SYSTEM\CurrentControlSet\Services\SysmonDrv"
-        $SysmonExePath = "C:\Windows\$SvcName.exe"
+        
         if ((Test-Path -Path $SysmonSvcRegPath) -or (Test-Path -Path $SysmonDrvRegPath))
         {
             if ($UninstallMethod -eq "Force")
@@ -99,21 +100,21 @@
                 Remove-Item -Path $SysmonSvcRegPath -Recurse -Force -ErrorAction SilentlyContinue
                 Remove-Item -Path $SysmonDrvRegPath -Recurse -Force -ErrorAction SilentlyContinue
 
-                if ((Test-Path $SysmonExePath) -or (Test-Path "C:\Windows\SysmonDrv.sys"))
+                if ((Test-Path $SysmonExePath) -or (Test-Path "$env:windir\SysmonDrv.sys"))
                 {   #Schedule Sysmon files to delete at next reboot
                     try
                     {   #Append to existing PendingFileRenameOperations registry value to delete Sysmon files at next reboot
                         Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager" | Select-Object -ExpandProperty "PendingFileRenameOperations" -ErrorAction Stop | Out-Null
                         Write-Verbose "$(Get-Date): Updating existing PendingFileRenameOperations registry value to delete Sysmon files at next reboot."
                         $values = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager" -Name "PendingFileRenameOperations").PendingFileRenameOperations
-                        $values += "\??\$SysmonExePath","","\??\C:\Windows\SysmonDrv.sys",""
+                        $values += "\??\$SysmonExePath","","\??\$env:windir\SysmonDrv.sys",""
                         Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager" "PendingFileRenameOperations" $values
                     }
                     catch
                     {   #Create PendingFileRenameOperations registry value to delete Sysmon files at next reboot
                         Write-Verbose "$(Get-Date): Creating PendingFileRenameOperations registry value to delete Sysmon files at next reboot."
                         New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager" -Name "PendingFileRenameOperations" `
-                        -Value "\??\$SysmonExePath","","\??\C:\Windows\SysmonDrv.sys","" `
+                        -Value "\??\$SysmonExePath","","\??\$env:windir\SysmonDrv.sys","" `
                         -PropertyType MultiString -Force | Out-Null
                     }
                 }
@@ -133,7 +134,6 @@
     {
         $SysmonSvcRegPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$SvcName"
         $SysmonDrvRegPath = "HKLM:\SYSTEM\CurrentControlSet\Services\SysmonDrv"
-        $SysmonExePath = "C:\Windows\$SvcName.exe"
         if (-not((Test-Path -Path $SysmonSvcRegPath) -and (Test-Path -Path $SysmonDrvRegPath) -and (Get-Process -Name $SvcName)))
         {   #Verify service registry keys and process are not present before attempting an install
             if ([Environment]::Is64BitOperatingSystem)
@@ -166,9 +166,9 @@
 
     function Validate-Sysmon([string]$RunDir,[string]$SvcName)
     {
+        $SysmonExePath = "$env:windir\$SvcName.exe"
         $SysmonSvcRegPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$SvcName"
         $SysmonDrvRegPath = "HKLM:\SYSTEM\CurrentControlSet\Services\SysmonDrv"
-        $SysmonExePath = "C:\Windows\$SvcName.exe"
         if ((Test-Path -Path $SysmonSvcRegPath) -and (Test-Path -Path $SysmonDrvRegPath))
         {
             if ([Environment]::Is64BitOperatingSystem)
@@ -202,9 +202,9 @@
 
     function Apply-SysmonConfig([string]$RunDir,[string]$ConfigFile,[string]$SvcName)
     {
+        $SysmonExePath = "$env:windir\$SvcName.exe"
         $SysmonSvcRegPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$SvcName"
         $SysmonDrvRegPath = "HKLM:\SYSTEM\CurrentControlSet\Services\SysmonDrv"
-        $SysmonExePath = "C:\Windows\$SvcName.exe"
         if ((Test-Path -Path $SysmonDrvRegPath) -and (Get-Process -Name $SvcName -ErrorAction SilentlyContinue))
         {
             try
@@ -254,7 +254,15 @@
 
     function Get-SHA256FileHash([string]$File)
     {   #Used instead of Get-FileHash due to failing FIPS cryptographic algorithm validation
-        [System.BitConverter]::ToString((New-Object -TypeName System.Security.Cryptography.SHA256Cng).ComputeHash([System.IO.File]::ReadAllBytes($File))).Replace("-", "")
+        try
+        {
+            [System.BitConverter]::ToString((New-Object -TypeName System.Security.Cryptography.SHA256Cng).ComputeHash([System.IO.File]::ReadAllBytes($File))).Replace("-", "")
+        }
+        catch
+        {
+            Write-Verbose "$(Get-Date): Hashing of file $File failed"
+            return
+        }
     }
 
     if ($Uninstall)
@@ -285,13 +293,38 @@
     }
 
     $ConfigFile = Select-Config $ConfigFile
-    Write-Verbose "$(Get-Date): Service name: $SvcName"
     Write-Verbose "$(Get-Date): Script RunDir: $RunDir"
     Write-Verbose "$(Get-Date): Configuration file: $ConfigFile"
+    Write-Verbose "$(Get-Date): Target service name: $SvcName"
 
     if ((Test-Path "$RunDir\x64\$SvcName.exe") -and (Test-Path "$RunDir\x86\$SvcName.exe") -and (Test-Path "$RunDir\$ConfigFile") -and ($ConfigFile))
     {   #All required files are present
-        if ((Get-Service -Name $SvcName,SysmonDrv -ErrorAction SilentlyContinue).Name -match $SvcName)
+        if (-not((Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager" -Name "PendingFileRenameOperations" -ErrorAction SilentlyContinue).PendingFileRenameOperations -match "SysmonDrv.sys"))
+        {   #Verify there are no pending uninstalls
+            $SysmonSvcRegPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$SvcName"
+            if ((Test-Path -Path "$env:windir\SysmonDrv.sys") -and (-not(Test-Path -Path $SysmonSvcRegPath)))
+            {   #Verify the service name provided matches the installed service name
+                $SvcNameDetected = (Get-WmiObject -Class Win32_Service | Where-Object {$_.Description -eq 'System Monitor service'}).Name
+                if ($SvcNameDetected)
+                {
+                    if ((Get-Item "$env:windir\$SvcNameDetected.exe").VersionInfo.InternalName -eq "System Monitor")
+                    {
+                        $SvcName = $SvcNameDetected
+                        Write-Verbose "$(Get-Date): Detected service name: $SvcNameDetected"
+                    }
+                    else
+                    {
+                        Write-Error "$(Get-Date): An existing System Monitor service was detected named $SvcNameDetected, but it did not contain the expected version information"
+                    }
+                }
+            }
+        }
+        else
+        {
+            Write-Verbose "$(Get-Date): A graceful uninstall is currently pending. Reboot and try again."
+            break
+        }
+        if ((Get-Service -Name $SvcName -ErrorAction SilentlyContinue).Name -eq $SvcName)
         {   #Sysmon service exists
             if (Validate-Sysmon -RunDir $RunDir -SvcName $SvcName)
             {   #Local Sysmon file hash matches source file hash
