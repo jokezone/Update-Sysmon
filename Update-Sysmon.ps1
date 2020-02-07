@@ -28,8 +28,10 @@
     .LINK
         Source project:
         https://github.com/jokezone/Update-Sysmon
-        Sysmon documentation:
-        https://technet.microsoft.com/en-us/sysinternals/dn798348
+        Sysmon download:
+        https://docs.microsoft.com/en-us/sysinternals/downloads/sysmon
+        Community supported Sysmon documentation:
+        https://github.com/trustedsec/SysmonCommunityGuide
         Community supported Sysmon configuration:
         https://github.com/SwiftOnSecurity/sysmon-config
         
