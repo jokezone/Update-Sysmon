@@ -1,0 +1,30 @@
+<!-- A sample configuration file for testing Sysmon -->
+<!-- Tested on: Sysmon v11.0 -->
+
+<Sysmon schemaversion="4.3">
+    <HashAlgorithms>md5,sha256,IMPHASH</HashAlgorithms> <!-- Hash algorithm(s) to apply for hashing -->
+    <DnsLookup>False</DnsLookup> <!-- Controls reverse DNS lookup -->
+    <ArchiveDirectory>SysmonFileDelete</ArchiveDirectory> <!-- Name of SYSTEM ACL protected directory at volume root which copy-on-delete files are moved -->
+	<CheckRevocation/> <!-- Controls signature revocation checks -->
+
+	<EventFiltering>
+        <ProcessCreate onmatch="exclude"/> <!-- EventID 1 - Logs all process creation events with no exclusions -->
+        <FileCreateTime onmatch="include"/> <!-- EventID 2 - Logs no events for this filter tag -->
+		<NetworkConnect onmatch="include"/> <!-- EventID 3 - Logs no events for this filter tag -->
+		<ProcessTerminate onmatch="include"/> <!-- EventID 5 - Logs no events for this filter tag -->
+		<DriverLoad onmatch="include"/> <!-- EventID 6 - Logs no events for this filter tag -->
+		<ImageLoad onmatch="include"/> <!-- EventID 7 - Logs no events for this filter tag -->
+		<CreateRemoteThread onmatch="include"/> <!-- EventID 8 - Logs no events for this filter tag -->
+		<RawAccessRead onmatch="include"/> <!-- EventID 9 - Logs no events for this filter tag -->
+		<ProcessAccess onmatch="include"/> <!-- EventID 10 - Logs no events for this filter tag -->
+		<FileCreate onmatch="include"/> <!-- EventID 11 - Logs no events for this filter tag -->
+		<RegistryEvent onmatch="include"/> <!-- EventID 12,13,14 - Logs no events for this filter tag -->
+		<FileCreateStreamHash onmatch="include"/> <!-- EventID 15 - Logs no events for this filter tag -->
+		<PipeEvent onmatch="include"/> <!-- EventID 17,18 - Logs no events for this filter tag -->
+		<WmiEvent onmatch="include"/> <!-- EventID 19,20,21 - Logs no events for this filter tag -->
+		<DnsQuery onmatch="include"/> <!-- EventID 22 - Logs no events for this filter tag -->
+		<FileDelete onmatch="include"> <!-- EventID 23 - Logs only events matching the filters -->
+            <TargetFilename condition="begin with">c:\tools</TargetFilename> <!-- Files deleted matching the filters will be copied to the system root ArchiveDirectory - See FileDelete demo here: https://youtu.be/_MUP4tgdM7s?t=156 -->
+		</FileDelete>
+	</EventFiltering>
+</Sysmon>

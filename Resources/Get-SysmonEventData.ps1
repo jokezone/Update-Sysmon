@@ -89,6 +89,7 @@ function Get-SysmonEventData {
             WmiEventConsumerActivityDetected = 20
             WmiEventConsumerToFilterActivityDetected = 21
             DNSQuery = 22
+            FileDelete = 23
             Error = 255
         }
         
@@ -114,6 +115,7 @@ function Get-SysmonEventData {
             '20' = 'WmiEventConsumerActivityDetected'
             '21' = 'WmiEventConsumerToFilterActivityDetected'
             '22' = 'DNSQuery'
+            '23' = 'FileDelete'
             '255' = 'Error'
             
         }
