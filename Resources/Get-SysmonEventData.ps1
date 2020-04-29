@@ -19,7 +19,7 @@ function Get-SysmonEventData {
             ParameterSetName='ID',
             ValueFromPipelineByPropertyName=$true,
             Position=0)]
-        [ValidateSet(1,2,3,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,255)]
+        [ValidateSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,255)]
         [Int32[]]
         $EventId,
         
@@ -29,12 +29,13 @@ function Get-SysmonEventData {
             ValueFromPipelineByPropertyName=$true,
             Position=0)]
         [string[]]
-        [ValidateSet('NetworkConnect', 'ProcessCreate', 'FileCreateTime', 
-            'ProcessTerminate', 'ImageLoad', 'DriverLoad', 
+        [ValidateSet('NetworkConnect', 'ProcessCreate', 'FileCreateTime',
+            'ProcessTerminate', 'ImageLoad', 'DriverLoad',
             'CreateRemoteThread', 'RawAccessRead', 'ProcessAccess', 'Error',
-            'FileCreateStreamHash', 'RegistryValueSet', 'RegistryRename', 
+            'FileCreateStreamHash', 'RegistryValueSet', 'RegistryRename',
             'RegistryAddOrDelete', 'FileCreate','ConfigChange','PipeCreated',
-            'PipeConnected')]
+            'PipeConnected', 'WmiEventFilterActivityDetected', 'WmiEventConsumerActivityDetected',
+            'WmiEventConsumerToFilterActivityDetected', 'DNSQuery', 'FileDelete')]
         $EventType,
         
         # Specifies the maximum number of events that Get-WinEvent returns. Enter an integer. The default is to return all the events in the logs or files.
