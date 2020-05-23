@@ -25,13 +25,34 @@
     detailed information about process creations, network connections, and
     changes to file creation time.
 
+    .PARAMETER RunDir
+        The directory where we will find the Sysmon binaries. Default: Script directory
+    .PARAMETER ConfigFile
+        The Sysmon XML configuration file you would like to import. Can be selected automatically.
+    .PARAMETER LogDir
+        The directory for logging Sysmon output. Default: %WinDir%\Temp
+    .PARAMETER SvcName
+        Custom Sysmon service name and name of the Sysmon binaries found in x86/x64 sub-folders of the RunDir. Default: Sysmon
+    .PARAMETER Uninstall
+        Switch for removal of Sysmon.
+    .PARAMETER UninstallMethod
+        Choose from Graceful or Force. Default: Forceably remove Sysmon without requiring a reboot.
+
+    .INPUTS
+        None. You cannot pipe objects to Update-Sysmon.
+    .OUTPUTS
+        None. Update-Sysmon does not generate any output.
+
     .LINK
         Source project:
         https://github.com/jokezone/Update-Sysmon
+    .LINK
         Sysmon download:
         https://docs.microsoft.com/en-us/sysinternals/downloads/sysmon
+    .LINK
         Community supported Sysmon documentation:
         https://github.com/trustedsec/SysmonCommunityGuide
+    .LINK
         Community supported Sysmon configuration:
         https://github.com/SwiftOnSecurity/sysmon-config
         
