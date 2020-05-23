@@ -1,7 +1,7 @@
 # Update-Sysmon Overview
-This function was created to aid in the deployment/maintenance of the Sysmon service on a large number of computers. System Monitor (Sysmon) is a Windows system service and device driver that, once installed on a system, remains resident across system reboots to monitor and log system activity to the Windows event log.
+Update-Sysmon was created to aid in the deployment/maintenance of the Sysmon service on a large number of computers. System Monitor (Sysmon) is a Windows system service and device driver that, once installed on a system, remains resident across system reboots to monitor and log system activity to the Windows event log. One extremely useful feature of Sysmon is the ability to load custom configurations to filter out noise. These configurations will require constant tuning based on the events occurring in your environment. Update-Sysmon allows you to centrally manage the deployment of configuration files and new Sysmon versions.
 
-The Update-Sysmon function can install, uninstall, and update Sysmon. It will detect if the Sysmon service exists and validate the file hash against the version from the specified directory before choosing to install or update the Sysmon binary and/or configuration. You must stage the Sysmon installation files in x86/x64 sub-folders of the script running directory. Each filename must match the name you choose for the service (default=Sysmon).
+With Update-Sysmon, you can install, uninstall, and update Sysmon. It will detect if the Sysmon service exists and validate the installed version file hash against the version in your deployment directory before choosing to install or update the Sysmon binary and/or configuration. You must stage the Sysmon installation files in x86/x64 sub-folders of the script running directory. Each filename must match the name you choose for the service (default=Sysmon).
 
 ## Usage ##
 ### Install Method #1 ###
