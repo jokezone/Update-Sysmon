@@ -1,0 +1,15 @@
+#Do not track backup directories
+**/Backups
+
+#Do not track testing sub-directories
+Testing-CurrentVersion/Config
+Testing-CurrentVersion/x64
+Testing-CurrentVersion/x86
+Testing-CurrentVersion/Update-Sysmon.ps1
+Testing-NewVersion/Config
+Testing-NewVersion/x64
+Testing-NewVersion/x86
+Testing-NewVersion/Update-Sysmon.ps1
+
+#Do not track executables
+*.exe

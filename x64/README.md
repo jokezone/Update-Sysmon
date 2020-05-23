@@ -1,0 +1,2 @@
+# Update-Sysmon x64 Directory
+Stage the 64-bit Sysmon executable file in this directory. The file base name (the text before .exe) must match the SvcName parameter value used in your deployment. This will be the installed service name and the Sysmon running process name on each endpoint. Obtain Sysmon binaries directly from [Microsoft](https://docs.microsoft.com/en-us/sysinternals/downloads/sysmon).
