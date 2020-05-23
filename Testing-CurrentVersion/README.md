@@ -3,4 +3,4 @@ This optional folder is meant to contain a copy of your production deployment fi
 
 Updating the files in this directory will allow you to observe the behavior on a subset of test computers.
 
-Once new configurations have been tested/approved, use Update-SysmonConfig.ps1 to backup and synchronize the changes with the production deployment folder.
+Once new configurations have been tested/approved, use Update-SysmonDeployment.ps1 to backup and synchronize the changes with the production deployment folder.
