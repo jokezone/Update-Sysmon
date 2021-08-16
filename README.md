@@ -30,7 +30,7 @@ PS C:\> Update-Sysmon -Uninstall -SvcName "Sysmon" -UninstallMethod "Force" -Ver
 
 ## Domain Deployment ##
 
-The Update-Sysmon function can be deployed as a computer startup script or a scheduled system task to deploy the Sysmon service on all domain Windows endpoints without any user interaction. An hourly scheduled task is preferred because it will ensure the Sysmon service is always running. Host the function and Sysmon binaries in a share all domain computers can access (such as NETLOGON).
+The Update-Sysmon function can be deployed as a computer startup script or a scheduled system task to deploy the Sysmon service on all domain Windows endpoints without any user interaction. An hourly scheduled task is preferred because it will ensure the Sysmon service is always running. Host the function and Sysmon binaries in a share all domain computers can access (such as NETLOGON). Tip: See this [article](https://devblogs.microsoft.com/scripting/how-to-run-powershell-scripts-from-a-shared-directory/) on how to run PowerShell scripts from a shared directory.
 
 The Update-SysmonDomainLauncher.ps1 script can be used to set the Update-Sysmon parameters based on the domain computer account role and group membership. This allows you to deploy a single policy to all systems while applying Sysmon configurations tailored to the Operating System role (workstation, member server, or domain controller). You can also apply custom settings based on AD security group membership. This is useful for re-directing a group of test computers to a Sysmon deployment share containing a new version of the Sysmon utility along with configuration files for that version.
 
